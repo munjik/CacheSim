@@ -1,7 +1,7 @@
 /* Munji Kahalah
  * NetID: 101706335
  * 04/15/2018
- * The Cache Lab */
+ * The Cache L1ab */
 
  #include <stdio.h>
  #include <unistd.h>
@@ -23,7 +23,7 @@
   /* Our cache line */
   typedef struct {
     int validBit;
-    long tag;
+    unsigned long long tag;
     int bData;
   }  lineCache;
 
@@ -37,7 +37,7 @@
     setCache *arraySets;
   } theCache;
 
-  /* the powers: 2^s and 2^b */
+  /* the powers: 2^s and 2^b, according to the book on how to calculate */
   typedef struct {
     int B;
     int S;
@@ -45,44 +45,53 @@
 
 
  int main(int argc, char *argv[]) {
+
    /* the options on the command line the user will type in */
-   int choices, h, v, s, E, b, t;
-   int c;
+   int choices, s, E, b;
+  //  int hit_count;
+  //  int miss_count;
+  //  int eviction_count;
+
+   /* see line 100 and 101  */
+   theCache cacheCache;
+   /* these variabels are taken from CMU, in part of the fscanf example */
+   char operation;
+   unsigned long long address;
+   int size;
+
    FILE *pFile; // pointer to file object
 
    /* we have colons to give them arguements */
    while(-1 != (choices = getopt(argc, argv, "hvs:E:b:t:"))) {
      switch (choices) {
       /* first two (h and v) will not take the atoi(optarg) function */
-       /* • -h: Optional help flag that prints usage info */
+       /* -h: Optional help flag that prints usage info */
        case 'h':
         showUsage();
-        h = 1;
         break;
-       /* • -v: Optional verbose flag that displays trace info */
-       case 'v':
-                v = 1;
-                break;
+       /* -v: Optional verbose flag that displays trace info */
+      //  case 'v':
+      //           v = 1;
+      //           break;
 
-      /* • -s <s>: Number of set index bits (S = 2s is the number of sets) */
+      /* -s <s>: Number of set index bits (S = 2s is the number of sets) */
        case 's':
         s = atoi(optarg);
         break;
 
-      /* • -E <E>: Associativity (number of lines per set)*/
+      /* -E <E>: Associativity (number of lines per set)*/
        case 'E':
         E = atoi(optarg);
         break;
 
-      /* • -b <b>: Number of block bits (B = 2b is the block size) */
+      /* -b <b>: Number of block bits (B = 2b is the block size) */
        case 'b':
         b = atoi(optarg);
         break;
 
-      /* • -t <tracefile>: Name of the valgrind trace to replay */
+      /* -t <tracefile>: Name of the valgrind trace to replay */
        case 't':
         pFile = fopen(optarg, "r");
-        t = 1;
         break;
         /* make sure arguments are correct */
        default:
@@ -94,25 +103,41 @@
    big.S = pow(2, s);
    big.B = pow(2, b);
 
-   theCache cacheMoney;
-   cacheMoney.arraySets = malloc
-
-
+   /* We will be allocating the memory for the number of sets and then
+   for the lines in each set. E = 1 line per set */
+   cacheCache.arraySets = malloc(big.S * sizeof(setCache));
+   for (int j = 0; j < big.S; j++) {
+     cacheCache.arraySets[j].newLines = malloc(E * sizeof(lineCache));
+   }
 
    /* if null print out our usage and inform user that no file has been traced*/
    if (pFile == NULL) {
      printf("NO FILE TO TRACE\n");
      showUsage();
    }
-   /* Just prints out the file once read
-      possibly retutrn -1 someweher indicating its out of outputs?*/
-   while (1) {
-     c = fgetc(pFile);
-     if(feof(pFile)) {
-       break;
+   else {
+     while(fscanf(pFile, "%c %llx,%d", &operation, &address, &size) > 0) {
+       /* we have three operations: M L S and we ignore 'I' */
+       if ((operation != 'I') && (operation == 'M' || operation == 'L' || operation == 'S')) {
+         printf("%c %llx %d", operation, address, size);
+
+
+       }
+
      }
-     printf("%c", c);
+
    }
+
+   /* Just prints out the file once read */
+  //  while (1) {
+  //    c = fgetc(pFile);
+  //    if(feof(pFile)) {
+  //      break;
+  //    }
+  //    /* test for copying the file and printing it onto command line*/
+  //   printf("%c", c);
+  //  }
+   printSummary(0, 0, 0);
    fclose(pFile); // close file
    return 0;
  }
